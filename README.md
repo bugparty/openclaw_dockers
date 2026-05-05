@@ -1,9 +1,10 @@
-# 🚀 OpenClaw Docker One-Click Installation Solution
+# OpenClaw Docker One-Click Install
 
 ## Introduction
-This is an **incredibly simple** OpenClaw Docker containerization solution. Deploy and start your entire environment with just a few commands.
 
-## ⚡ Quick Start (3 Steps)
+This is a simple OpenClaw Docker containerization setup. Deploy and start the full environment with just a few commands.
+
+## Quick Start
 
 ```bash
 # 1. Initialize environment
@@ -12,15 +13,14 @@ This is an **incredibly simple** OpenClaw Docker containerization solution. Depl
 # 2. Start containers
 docker compose up -d
 
-# 3. Configure openclaw
+# 3. Configure OpenClaw
 docker compose exec openclaw openclaw onboard
 docker compose restart openclaw
 ```
 
-## 🔧 Browser Configuration
+## Browser Configuration
 
-Add this configuration to your OpenClaw config file (`/home/node/.openclaw/openclaw.json`) to connect to the local browser service:
-You can ask OpenClaw to add this too.
+Add this configuration to your OpenClaw config file (`/home/node/.openclaw/openclaw.json`) to connect to the local browser service.
 
 ```json
 {
@@ -39,24 +39,23 @@ You can ask OpenClaw to add this too.
 }
 ```
 
-## enter openclaw cli/tui
+## Enter the OpenClaw CLI/TUI
 
 ```bash
 docker compose exec openclaw bash
 ```
 
-## 🎯 Key Features
+## Key Features
 
-- ✅ **One-Click Deployment** - Complex Docker configuration is already prepared for you
-- ✅ **Out-of-the-Box** - No manual configuration needed, everything is automated
-- ✅ **Developer-Friendly** - Built-in bash environment for quick container access
+- One-click deployment: the Docker setup is already prepared
+- Ready to use: no manual configuration is needed
+- Developer-friendly: built-in bash access for quick container entry
 
-
-## 📦 What's Included
+## What's Included
 
 - Complete OpenClaw environment
 - Integrated Chrome browser
 - Automated configuration scripts
 - Docker Compose orchestration
 
-**That's it!** Whether you're a beginner or expert, you can quickly set up your OpenClaw development environment.
+That's it. Whether you are a beginner or an expert, you can quickly set up your OpenClaw development environment.

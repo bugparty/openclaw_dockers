@@ -24,8 +24,47 @@ data:
 
     CONFIG_DIR="${HOME}/.openclaw"
     CONFIG_FILE="${CONFIG_DIR}/openclaw.json"
+    BASHRC_FILE="${HOME}/.bashrc"
+    INPUTRC_FILE="${HOME}/.inputrc"
 
-    mkdir -p "${CONFIG_DIR}"
+    mkdir -p "${CONFIG_DIR}" "${NODE_COMPILE_CACHE:-${HOME}/.cache/node-compile-cache}"
+
+    if [ ! -f "${BASHRC_FILE}" ]; then
+      printf '%s\n' \
+        'export TERM="${TERM:-xterm-256color}"' \
+        'export EDITOR="${EDITOR:-nano}"' \
+        'export PAGER="${PAGER:-less}"' \
+        "export LESS='-FRX'" \
+        'export HISTFILE="${HOME}/.bash_history"' \
+        'export HISTSIZE=5000' \
+        'export HISTFILESIZE=10000' \
+        "export PROMPT_COMMAND='history -a'" \
+        '' \
+        'shopt -s histappend checkwinsize' \
+        '' \
+        'if [ -n "${PS1:-}" ]; then' \
+        "  PS1='\\[\\033[01;32m\\]\\u@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '" \
+        'fi' \
+        '' \
+        "alias ll='ls -alF --color=auto'" \
+        "alias la='ls -A --color=auto'" \
+        "alias l='ls -CF --color=auto'" \
+        "alias k='kubectl'" \
+        '' \
+        'if [ -f /etc/bash_completion ]; then' \
+        '  . /etc/bash_completion' \
+        'fi' \
+        > "${BASHRC_FILE}"
+    fi
+
+    if [ ! -f "${INPUTRC_FILE}" ]; then
+      printf '%s\n' \
+        'set completion-ignore-case on' \
+        'set show-all-if-ambiguous on' \
+        'set colored-stats on' \
+        'set mark-symlinked-directories on' \
+        > "${INPUTRC_FILE}"
+    fi
 
     if [ ! -f "${CONFIG_FILE}" ]; then
       printf '%s\n' \
@@ -99,6 +138,11 @@ metadata:
   namespace: openclaw
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: browser
@@ -211,6 +255,8 @@ spec:
           env:
             - name: HOME
               value: /home/node
+            - name: NODE_COMPILE_CACHE
+              value: /home/node/.cache/node-compile-cache
             - name: TERM
               value: xterm-256color
           envFrom:

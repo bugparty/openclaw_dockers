@@ -33,6 +33,11 @@ fi
 cat > /tmp/browser-launch.sh <<EOF
 #!/bin/bash
 set -euo pipefail
+# Clean stale Chromium profile locks left by previous pod hostname/PID.
+rm -f /home/appuser/chrome-data/SingletonLock \
+      /home/appuser/chrome-data/SingletonSocket \
+      /home/appuser/chrome-data/SingletonCookie \
+      /home/appuser/chrome-data/DevToolsActivePort || true
 exec $(printf '%q ' "$@")
 EOF
 chmod +x /tmp/browser-launch.sh
@@ -52,6 +57,8 @@ weston \
   --xwayland \
   --socket="${WAYLAND_DISPLAY}" \
   --config=/tmp/weston.ini \
+  --width=1920 \
+  --height=1080 \
   --rdp-tls-cert="${WESTON_CERT}" \
   --rdp-tls-key="${WESTON_KEY}" \
   --log=/tmp/weston.log &
