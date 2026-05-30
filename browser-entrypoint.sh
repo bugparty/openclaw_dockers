@@ -88,6 +88,33 @@ http {
     scgi_temp_path /tmp/nginx-scgi;
     server {
         listen 9223;
+        location = /json/version {
+            proxy_pass http://127.0.0.1:9222/json/version;
+            proxy_http_version 1.1;
+            proxy_set_header Host localhost:9222;
+            proxy_set_header Accept-Encoding "";
+            sub_filter_types application/json;
+            sub_filter_once off;
+            sub_filter "ws://localhost:9222/" "ws://browser:9223/";
+        }
+        location = /json {
+            proxy_pass http://127.0.0.1:9222/json;
+            proxy_http_version 1.1;
+            proxy_set_header Host localhost:9222;
+            proxy_set_header Accept-Encoding "";
+            sub_filter_types application/json;
+            sub_filter_once off;
+            sub_filter "ws://localhost:9222/" "ws://browser:9223/";
+        }
+        location ^~ /json/ {
+            proxy_pass http://127.0.0.1:9222;
+            proxy_http_version 1.1;
+            proxy_set_header Host localhost:9222;
+            proxy_set_header Accept-Encoding "";
+            sub_filter_types application/json;
+            sub_filter_once off;
+            sub_filter "ws://localhost:9222/" "ws://browser:9223/";
+        }
         location / {
             proxy_pass http://127.0.0.1:9222;
             proxy_http_version 1.1;
