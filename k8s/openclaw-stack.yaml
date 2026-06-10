@@ -434,7 +434,9 @@ spec:
             - name: HOME
               value: /home/node
             - name: NODE_COMPILE_CACHE
-              value: /home/node/.cache/node-compile-cache
+              value: /var/tmp/openclaw-compile-cache
+            - name: OPENCLAW_NO_RESPAWN
+              value: "1"
             - name: TERM
               value: xterm-256color
           envFrom:

@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-bootstrap
+  namespace: openclaw
+data:
+  run-hermes-supervisor.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    export HOME=/home/node
+    export PATH=/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/home/node/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+    export NODE_COMPILE_CACHE=/var/tmp/openclaw-compile-cache
+    export OPENCLAW_NO_RESPAWN=1
+    export TERM=${TERM:-xterm-256color}
+
+    mkdir -p /home/node /home/linuxbrew /var/tmp/openclaw-compile-cache /tmp/supervisor
+
+    if ! command -v supervisord >/dev/null 2>&1; then
+      python3 -m pip install --user --break-system-packages supervisor
+      export PATH="$HOME/.local/bin:$PATH"
+    fi
+
+    exec "$HOME/.local/bin/supervisord" -c /opt/hermes/supervisord.conf
+  supervisord.conf: |
+    [supervisord]
+    nodaemon=true
+    logfile=/tmp/supervisord.log
+    pidfile=/tmp/supervisord.pid
+    childlogdir=/tmp/supervisor
+
+    [program:gateway]
+    command=/home/node/.local/bin/hermes gateway run
+    directory=/home/node
+    autorestart=true
+    priority=10
+    stdout_logfile=/dev/stdout
+    stdout_logfile_maxbytes=0
+    stderr_logfile=/dev/stderr
+    stderr_logfile_maxbytes=0
+    environment=HOME="/home/node",PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/home/node/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games",NODE_COMPILE_CACHE="/var/tmp/openclaw-compile-cache",OPENCLAW_NO_RESPAWN="1",TERM="xterm-256color"
+
+    [program:dashboard]
+    command=/home/node/.local/bin/hermes dashboard --host 0.0.0.0 --port 9119 --insecure --no-open
+    directory=/home/node
+    autorestart=true
+    priority=20
+    stdout_logfile=/dev/stdout
+    stdout_logfile_maxbytes=0
+    stderr_logfile=/dev/stderr
+    stderr_logfile_maxbytes=0
+    environment=HOME="/home/node",PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/home/node/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games",NODE_COMPILE_CACHE="/var/tmp/openclaw-compile-cache",OPENCLAW_NO_RESPAWN="1",TERM="xterm-256color"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hermes
+  namespace: openclaw
+spec:
+  selector:
+    matchLabels:
+      app: hermes
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+        - name: fix-home-perms
+          image: busybox:1.36
+          command: ["sh", "-c", "mkdir -p /home-data /brew-data && chown -R 1000:1000 /home-data /brew-data"]
+          volumeMounts:
+            - name: openclaw-home
+              mountPath: /home-data
+            - name: openclaw-linuxbrew
+              mountPath: /brew-data
+      containers:
+        - name: hermes
+          image: ghcr.io/bugparty/browserdocker-openclaw:latest
+          imagePullPolicy: Always
+          command: ["/bin/bash", "/opt/hermes/run-hermes-supervisor.sh"]
+          env:
+            - name: HOME
+              value: /home/node
+            - name: PATH
+              value: /home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/home/node/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+            - name: NODE_COMPILE_CACHE
+              value: /var/tmp/openclaw-compile-cache
+            - name: OPENCLAW_NO_RESPAWN
+              value: "1"
+            - name: TERM
+              value: xterm-256color
+          envFrom:
+            - secretRef:
+                name: openclaw-env
+          ports:
+            - containerPort: 9119
+              name: dashboard
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: openclaw-home
+              mountPath: /home/node
+            - name: openclaw-linuxbrew
+              mountPath: /home/linuxbrew
+            - name: hermes-bootstrap
+              mountPath: /opt/hermes/run-hermes-supervisor.sh
+              subPath: run-hermes-supervisor.sh
+            - name: hermes-bootstrap
+              mountPath: /opt/hermes/supervisord.conf
+              subPath: supervisord.conf
+      volumes:
+        - name: openclaw-home
+          persistentVolumeClaim:
+            claimName: openclaw-home
+        - name: openclaw-linuxbrew
+          persistentVolumeClaim:
+            claimName: openclaw-linuxbrew
+        - name: hermes-bootstrap
+          configMap:
+            name: hermes-bootstrap
+            defaultMode: 0755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes
+  namespace: openclaw
+spec:
+  type: ClusterIP
+  selector:
+    app: hermes
+  ports:
+    - name: dashboard
+      port: 9119
+      targetPort: 9119
