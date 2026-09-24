@@ -18,6 +18,7 @@ stringData:
           "api_base": "http://llama-cpp.default.svc.cluster.local:8080/v1",
           "api_key": "llama-cpp-local-placeholder",
           "model": "model.gguf",
+          "dimension": 1024,
           "encoding_format": "float"
         }
       },
@@ -68,8 +69,9 @@ spec:
     spec:
       containers:
         - name: openviking
-          image: ghcr.io/volcengine/openviking:latest
-          imagePullPolicy: Always
+          # openviking 0.4.4; pinned by digest so a node reboot cannot pull a new release
+          image: ghcr.io/volcengine/openviking@sha256:eb801a627ec5752343756bc692a26960dd68d875b60bb6c404680522520a548c
+          imagePullPolicy: IfNotPresent
           env:
             - name: OPENVIKING_WITH_BOT
               value: "0"
